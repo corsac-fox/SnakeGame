@@ -2,15 +2,23 @@ package snake;
 
 import java.awt.*;
 
-public class Vertebra {
-    int x, y;
-    Point p;
-    String direction;
+public class Vertebra extends Point{
 
-    Vertebra (int a, int b, String d) {
-        x = a;
-        y = b;
-        p = new Point(x, y);
-        direction = d;
-    }
+	int direction;
+
+	Vertebra (int a, int b, int d) {
+		this.x = a;
+		this.y = b;
+		this.direction = d;
+	}
+
+	void rotate(int direction)
+	{
+		this.direction = direction;
+	}
+
+	int getDirection()
+	{
+		return this.direction;
+	}
 }

@@ -1,304 +1,175 @@
 package snake;
 
 import javax.swing.*;
+import javax.swing.border.LineBorder;
 import java.awt.*;
-import java.util.Random;
-import java.util.Vector;
+import java.awt.event.ActionEvent;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
 
-class GameField extends JPanel {
+public class Field extends Content {
 
-    static int fieldWidth = 607, fieldHeight = 600;
-    static Color[] tool = {Color.GREEN, Color.YELLOW, Color.RED};
+    Game game;
+    Snake snake;
+    Food apple;
 
-    Random random = new Random();
-    double foodExist;
-    int x = 30, y = 30;
-    int foodX = 30*random.nextInt(20), foodY = 30*random.nextInt(20);
-    int score, foodCount;
-    boolean isCount, isFood;
-    Color foodColor;
-    Color bodyColor = new Color (115, 174, 255);
-    int foodType = random.nextInt(3) + 1;
-    int bodyCount = 1;
-    Vector <Vertebra> body = new Vector <Vertebra>();
-    static int tongueExist = 15;
+    JTextField name = new JTextField();
+    JButton write = new JButton("записать");
+    JLabel enter;
+    LineBorder border;
 
-    public void paintComponent(Graphics g) {
-        super.paintComponent(g);
-        if (body.size() == 0) {
+    Field(GameWindow owner) {
+        super(owner);
+        enter = new JLabel("введите ваше имя");
+        setComponentSettings(enter, null, font, null, null);
+        Dimension fieldSize = new Dimension(600, 600);
+        setPreferredSize(fieldSize);
+        setBackground(Color.black);
 
-            body.add(new Vertebra(x, y, Snake.direction));
-            x = 60;
-            body.add(new Vertebra(x, y, Snake.direction));
+        label.setText("новый рекорд!");
+        label.setForeground(Color.WHITE);
+        pause.setForeground(Color.WHITE);
+
+        add(label);
+        add(pause);
+
+        setComponentSettings(name, buttonSize, font, null, Color.WHITE);
+        setButtonSettings(mainMenu);
+        setButtonSettings(exit);
+        setButtonSettings(write);
+
+        {
+            layout.putConstraint(SpringLayout.WEST, mainMenu, 195, SpringLayout.WEST, this);
+            layout.putConstraint(SpringLayout.NORTH, mainMenu, 170, SpringLayout.NORTH, this);
+            layout.putConstraint(SpringLayout.WEST, exit, 195, SpringLayout.WEST, this);
+            layout.putConstraint(SpringLayout.NORTH, exit, 70, SpringLayout.NORTH, mainMenu);
+
+            layout.putConstraint(SpringLayout.WEST, label, 195, SpringLayout.WEST, this);
+            layout.putConstraint(SpringLayout.NORTH, label, 70, SpringLayout.NORTH, this);
+
+            layout.putConstraint(SpringLayout.WEST, pause, 265, SpringLayout.WEST, this);
+            layout.putConstraint(SpringLayout.NORTH, pause, 240, SpringLayout.NORTH, this);
+
+            layout.putConstraint(SpringLayout.WEST, enter, 193, SpringLayout.WEST, this);
+            layout.putConstraint(SpringLayout.NORTH, enter, 140, SpringLayout.NORTH, this);
+            layout.putConstraint(SpringLayout.WEST, name, 195, SpringLayout.WEST, this);
+            layout.putConstraint(SpringLayout.NORTH, name, 170, SpringLayout.NORTH, this);
+            layout.putConstraint(SpringLayout.WEST, write, 195, SpringLayout.WEST, this);
+            layout.putConstraint(SpringLayout.NORTH, write, 70, SpringLayout.NORTH, name);
         }
 
-        if (Snake.GameOver) {
-            bodyColor = Color.RED;
-            drawBody(g);
-            drawDeadHead(g);
+        name.setAlignmentY(CENTER_ALIGNMENT);
+        name.setHorizontalAlignment(SwingConstants.CENTER);
 
-        } else {
+        enter.setVisible(false);
+        exit.setVisible(false);
+        label.setVisible(false);
+        mainMenu.setVisible(false);
+        name.setVisible(false);
+        pause.setVisible(false);
+        write.setVisible(false);
 
-            g.setColor(bodyColor);
+        border = (LineBorder) LineBorder.createGrayLineBorder();
+        setControlSetting();
+        setVisible(true);
+    }
 
-            switch (Snake.direction) {
-                case ("left"):
+    @Override
+    public void actionPerformed(ActionEvent e) {
+        switch (e.getActionCommand()) {
+            case "выход":
+                System.exit(0);
+            case "главное меню":
+                owner.setContentPane(owner.lobby);
+                owner.setSize(400, 450);
+                mainMenu.setVisible(false);
+                exit.setVisible(false);
+                owner.hissing.play();
+                owner.repaint();
+                break;
+            case "записать":
+                game.updateHighScore(name.getText());
+                name.setVisible(false);
+                write.setVisible(false);
+                label.setVisible(false);
+                enter.setVisible(false);
+                owner.setSize(400, 450);
+                owner.setContentPane(owner.highScore);
+                owner.hissing.play();
+        }
+    }
 
-                    if (body.get(bodyCount).direction.equals("left")) {
-                        x = --x;
-                    } else if (body.get(bodyCount).direction.equals("right")){
-                        Snake.direction = "right";
-                        tongueExist = 0;
-                    } else {
-                        x = x - 30;
-                        y = (int)body.get(bodyCount).y;
-                    }
-                    break;
-                case ("up"):
+    void init() {
+        snake = new Snake(this);
+        apple = new Food(this);
+        game = new Game(this, snake);
 
-                    if (body.get(bodyCount).direction.equals("up")) {
-                        y = --y;
-                    } else if  (body.get(bodyCount).direction.equals("down")){
-                        Snake.direction = "down";
-                        tongueExist = 0;
-                    } else {
-                        y = y - 30;
-                        x = (int)body.get(bodyCount).x;
-                    }
-                    break;
-                case ("right"):
+        setFocusable(true);
+        requestFocusInWindow();
 
-                    if (body.get(bodyCount).direction.equals("right")) {
-                        x = ++x;
-                    } else if (body.get(bodyCount).direction.equals("left")){
-                        Snake.direction = "left";
-                        tongueExist = 0;
-                    } else {
-                        x = x + 30;
-                        y = (int)body.get(bodyCount).y;
-                    }
-                    break;
-                case ("down"):
+        Game.over = false;
+        owner.setTitle(String.format("очки: %d    длина хвоста: %d    скорость: %d", 0, snake.tailLength, snake.speed));
+        game.start();
+    }
 
-                    if (body.get(bodyCount).direction.equals("down")) {
-                        y = ++y;
-                    } else if (body.get(bodyCount).direction.equals("up")){
-                        Snake.direction = "up";
-                        tongueExist = 0;
-                    } else {
-                        y = y + 30;
-                        x = (int)body.get(bodyCount).x;
-                    }
-                    break;
-
-            }
-
-            if(body.get(bodyCount).p.distance(x, y) > 29) {
-                if ((touchBorder()&&(crossBorder()))|| crossTail()) {
-                    Snake.GameOver = true;
-                    repaint();
-                } else {
-                    body.add(new Vertebra(x, y, Snake.direction));
-                    body.remove(0);
+    void setControlSetting() {
+        addKeyListener(new KeyAdapter() {
+            public void keyPressed(KeyEvent e) {
+                switch (e.getKeyCode())
+                {
+                    case 37:
+                    case 38:
+                    case 39:
+                    case 40:
+                        if (!game.isPaused) snake.direction = e.getKeyCode();
+                        break;
+                    case 32:
+                        game.isPaused = !game.isPaused;
+                        repaint();
+                        break;
                 }
             }
+        });
+    }
 
-            if (!isCount) {
-                scoreCount();
+    void showMenu(Graphics2D g2D) {
+        g2D.setColor(backgroundColor);
+        g2D.fillRect(180, 155, 230, 165);
+
+        mainMenu.setVisible(true);
+        exit.setVisible(true);
+    }
+
+    void showNameEdit(Graphics2D g2D)
+    {
+        g2D.setColor(backgroundColor);
+        g2D.fillRect(180, 135, 230, 185);
+
+        label.setVisible(true);
+        enter.setVisible(true);
+        name.setVisible(true);
+        write.setVisible(true);
+    }
+
+    @Override
+    public void paintComponent(Graphics g) {
+        Graphics2D g2D = (Graphics2D) g;
+        super.paintComponent(g2D);
+        border.paintBorder(this, g2D, 0,0,600, 600);
+
+        snake.drawSnake(g2D);
+        snake.teasingTime++;
+
+        pause.setVisible(game.isPaused);
+
+        if (Game.over)
+        {
+            if (game.isHighScore(snake.tailLength))
+            {
+                showNameEdit(g2D);
             }
-
-            drawBody(g);
-            drawHead(g);
-
-            if (tongueExist < 15) {
-                drawTongue(g);
-                tongueExist++;
-            }
-
-            drawFood(g);
-
+            else showMenu(g2D);
         }
-    }
-
-    private boolean crossBorder () {
-        if (y > fieldHeight - 60 || y < 0 || x > fieldWidth - 60 || x <  0)
-            return true;
-        else return false;
-    }
-
-    private boolean touchBorder () {
-        if (y >= fieldHeight - 30|| y <= 0 || x >= fieldWidth - 30 || x <=  0)
-            return true;
-        else return false;
-    }
-
-    private void drawFood(Graphics g) {
-        if (foodColor == null) {
-            foodColor = tool[foodType - 1];
-        }
-
-        if (foodExist > 3000 || isCount) {
-            foodType = random.nextInt(3) + 1;
-            foodPlace();
-            isCount = false;
-            foodColor = null;
-            isFood = false;
-        }
-
-        g.setColor(foodColor);
-        g.fillOval(foodX, foodY, 30, 30);
-        g.setColor(Color.BLACK);
-        g.drawLine(foodX + 10, foodY + 7, foodX + 14, foodY + 11);
-        g.drawLine(foodX + 14, foodY + 7, foodX + 10, foodY + 11);
-        foodExist += (2 * foodType) * 10.0 / Snake.getSpeed();
-    }
-
-    private void drawDeadHead(Graphics g) {
-        x = body.get(bodyCount).x;
-        y = body.get(bodyCount).y;
-        g.setColor(Color.RED);
-        g.fillRect(x, y, 30, 30);
-        g.setColor(Color.BLACK);
-        g.drawRect(x + 5, y + 5, 20, 20);
-        g.drawLine(x + 10, y + 11, x + 14, y + 15);
-        g.drawLine(x + 16, y + 11, x + 20, y + 15);
-        g.drawLine(x + 14, y + 11, x + 10, y + 15);
-        g.drawLine(x + 20, y + 11, x + 16, y + 15);
-    }
-
-    private void drawHead(Graphics g) {
-        g.setColor(bodyColor);
-        g.fillRect(x, y, 30, 30);
-        g.setColor(Color.BLACK);
-        g.drawRect(x + 5, y + 5, 20, 20);
-        g.drawRect(x + 10, y + 11, 4, 4);
-        g.drawRect(x + 16, y + 11, 4, 4);
-
-    }
-
-    private void drawTongue(Graphics g) {
-        g.setColor(Color.RED);
-        if (Snake.direction.equals("right")) {
-            g.drawLine(x + 25, y + 20, x + 30, y + 20);
-            g.drawLine(x + 30, y + 20, x + 35, y + 18);
-            g.drawLine(x + 30, y + 20, x + 35, y + 22);
-        }
-        if (Snake.direction.equals("left")) {
-            g.drawLine(x + 5, y + 20, x, y + 20);
-            g.drawLine(x, y + 20, x - 5, y + 18);
-            g.drawLine(x, y + 20, x - 5, y + 22);
-        }
-        if (Snake.direction.equals("up")) {
-            g.drawLine(x + 15, y + 6, x + 15, y);
-            g.drawLine(x + 15, y, x + 13, y - 5);
-            g.drawLine(x + 15, y, x + 17, y - 5);
-        }
-        if (Snake.direction.equals("down")) {
-            g.drawLine(x + 15, y + 24, x + 15, y + 30);
-            g.drawLine(x + 15, y + 30, x + 13, y + 35);
-            g.drawLine(x + 15, y + 30, x + 17, y + 35);
-        }
-        g.setColor(bodyColor);
-    }
-
-    private void drawBody(Graphics g) {
-        g.setColor(bodyColor);
-        for (int i = 0; i < body.size(); i++) { //
-
-            if (i == 0 ) {
-                drawTail(g);
-
-            } else {
-                g.fillRect(body.get(i).x, body.get(i).y, 30, 30);
-                g.setColor(Color.BLACK);
-                g.drawRect(body.get(i).x + 5, body.get(i).y + 5, 20, 20);
-                g.drawRect(body.get(i).x + 10, body.get(i).y + 10, 10, 10);
-                g.drawRect(body.get(i).x + 13, body.get(i).y + 13, 4, 4);
-                g.setColor(bodyColor);
-            }
-        }
-    }
-
-    public void foodPlace() {
-        foodExist = 0;
-        foodX = 30*random.nextInt(19);
-        foodY = 30*random.nextInt(18);
-        for (int i = 0; i < body.size(); i++) {
-            if (Point.distance(body.get(i).x, body.get(i).y, foodX, foodY) < 30) {
-                foodPlace();
-            }
-        }
-    }
-
-    public int scoreCount() {
-        if (Point.distance(x, y, foodX, foodY) < 30) {
-
-            score += foodType * 10;
-            isFood = true;
-            foodCount++;
-            body.add(new Vertebra(foodX, foodY, Snake.direction));
-            x = foodX;
-            y = foodY;
-            isCount = true;
-            bodyCount++;
-            repaint();
-        }
-        return score;
-    }
-
-    public boolean crossTail() {
-        for (int i = 0; i < bodyCount; i++) {
-            if (Point.distance(x, y, body.get(i).x, body.get(i).y) < 30) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private void drawTail (Graphics g) {
-        int n = 3;
-        String direction = body.get(1).direction;
-
-        switch (direction) {
-            case ("down"):
-                int[] x = {body.get(1).x, body.get(1).x + 30, body.get(1).x + 15};
-                int[] y = {body.get(1).y, body.get(1).y, body.get(1).y - 40};
-                g.fillPolygon(new Polygon (x, y, n));
-                g.setColor(Color.BLACK);
-                g.drawLine(x[0], y[0] - 10, x[1], y[1] - 10);
-                g.drawLine(x[0], y[0] - 20, x[1], y[1] - 20);
-                break;
-            case ("left"):
-                x = new int[] {body.get(1).x + 30, body.get(1).x + 30, body.get(1).x + 70};
-                y = new int[] {body.get(1).y, body.get(1).y + 30, body.get(1).y + 30};
-                g.fillPolygon(new Polygon (x, y, n));
-                g.setColor(Color.BLACK);
-                g.drawLine(x[0] + 10, y[0], x[1] + 10, y[1]);
-                g.drawLine(x[0] + 20, y[0], x[1] + 20, y[1]);
-                break;
-            case ("up"):
-                x = new int[] {body.get(1).x + 30, body.get(1).x, body.get(1).x + 15};
-                y = new int[]{body.get(1).y + 30, body.get(1).y + 30, body.get(1).y + 70};
-                g.fillPolygon(new Polygon (x, y, n));
-                g.setColor(Color.BLACK);
-                g.drawLine(x[0], y[0] + 10, x[1], y[1] + 10);
-                g.drawLine(x[0], y[0] + 20, x[1], y[1] + 20);
-                break;
-            case ("right"):
-                x = new int[] {body.get(1).x, body.get(1).x, body.get(1).x - 40};
-                y = new int[]{body.get(1).y + 30, body.get(1).y, body.get(1).y + 30};
-                g.fillPolygon(new Polygon (x, y, n));
-                g.setColor(Color.BLACK);
-                g.drawLine(x[0] - 10, y[0], x[1] - 10, y[1]);
-                g.drawLine(x[0] - 20, y[0], x[1] - 20, y[1]);
-                break;
-        }
-        g.setColor(bodyColor);
-    }
-
-    GameField() {
-        setSize(fieldWidth, fieldHeight);
-        setBackground(Color.black);
-        setVisible(true);
+        else apple.draw(g2D);
     }
 }
