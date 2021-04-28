@@ -8,9 +8,13 @@ public class Game extends Thread {
 	Food food;
 
 	int score;
+	int factor = 10;
+	int levelUp = 150;
 	HighScorePage highScore;
 
 	int delay = 19;
+	int minDelay = 8;
+
 	boolean isPaused;
 
 	Game(Field owner, Snake player)
@@ -47,9 +51,9 @@ public class Game extends Thread {
 
 	void scoring() {
 		int temp = score;
-		score += food.getType() * 10;
+		score += food.getType() * factor;
 
-		if (temp / 150 < score / 150 && !Snake.isUniform && delay > 7) {
+		if (temp / levelUp < score / levelUp && !Snake.isUniform && delay >= minDelay) {
 			player.increaseSpeed();
 			delay -= 2;
 		}

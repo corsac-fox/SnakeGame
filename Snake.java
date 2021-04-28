@@ -227,8 +227,8 @@ public class Snake {
         {
             eating.play();
             grow();
-            owner.apple.reincarnation();
             owner.game.scoring();
+            owner.apple.reincarnation();
         }
     }
 
