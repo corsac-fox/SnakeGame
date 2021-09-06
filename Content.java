@@ -51,6 +51,7 @@ public abstract class Content extends JPanel implements ActionListener {
         b.setBackground(buttonColor);
         b.setPreferredSize(buttonSize);
         b.setFont(font);
+        b.setFocusPainted(false);
         add(b);
     }
 
